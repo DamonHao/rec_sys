@@ -44,7 +44,7 @@ class CF(object):
 		for item, user_num in popularity.iteritems():
 			if user_num < 2:
 				cold_item_num += 1
-		# N = min(len(all_items), 100
+		# N = min(len(all_items), 100)
 		# rank = sorted(popularity.items(), key=lambda x: x[1], reverse=True)[0:N]
 		print "data trend", len(all_items), len(train), cold_item_num
 

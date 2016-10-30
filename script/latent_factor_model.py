@@ -2,6 +2,7 @@
 
 import random
 import heapq
+import math
 
 
 class LatentFactorModel(object):
@@ -24,13 +25,49 @@ class LatentFactorModel(object):
 				continue
 
 			rank = self.recommend(user, N)
-			for item, pui, in rank:
+			for item, pui in rank:
 				if item in test_set_user_items:
 					hit += 1
 
 			precision_all += N
 			recall_all += len(test_set_user_items)
 		return hit / float(precision_all), hit / float(recall_all)
+
+	def coverage(self, N):
+		recommend_items = set()
+		all_items = set()
+		train = self._train
+		num = 0
+
+		for user in train.iterkeys():
+			for item in train[user].iterkeys():
+				all_items.add(item)
+
+			rank = self.recommend(user, N)
+			num += len(rank)
+			for item, _ in rank:
+				recommend_items.add(item)
+		print "coverage", num, len(recommend_items), len(all_items)
+		return len(recommend_items) / float(len(all_items))
+
+	def popularity(self, N):
+		item_popularity = {}
+		popularity = 0
+		num = 0
+
+		for user, items in self._train.iteritems():
+			for item in items.iterkeys():
+				item_popularity.setdefault(item, 0)
+				item_popularity[item] += 1
+
+		for user in self._train.iterkeys():
+			rank = self.recommend(user, N)
+			for item, _ in rank:
+				popularity += math.log(1 + item_popularity[item])
+				num += 1
+
+		popularity /= float(num)
+		return popularity
 
 	def _splitData(self, totalSplitNum, kthAsTest, seed):
 		data = open(self._filePath)
@@ -74,7 +111,6 @@ class LatentFactorModel(object):
 		sortedItems = self._sortedItems
 		maxSortedItemIndex = len(sortedItems)-1
 		usersAction = {}
-
 
 		for user, items in self._train.iteritems():
 			action = {}
@@ -158,16 +194,15 @@ class LatentFactorModel(object):
 		self._itemToClass = itemToClass
 
 
-MAX_DATA_NUM = 10000
+MAX_DATA_NUM = 100000
 
 
 if __name__ == '__main__':
 	import os
 	filePath = os.path.join(os.path.dirname(__file__), '../ml-1m/ratings.dat')
 	lfm = LatentFactorModel(filePath)
-	lfm.buildUserAction(3)
+	lfm.buildUserAction(1)
 	lfm.trainModel(5, 100, 0.02, 0.01)
 	# print lfm.recommend('1', 10)
-	print lfm.precisionAndRecall(10)
-	# print lfm.recommend('1', 10)
-	# cf = UserBasedCF(file_path)
+	# print lfm.precisionAndRecall(10)
+	print lfm.coverage(10), lfm.popularity(10)
